@@ -205,13 +205,12 @@ mod hacspec {
     array!(Bytes8, 8, U8);
     array!(BytesCcmKeyLen, AES_CCM_KEY_LEN, U8);
     array!(BytesCcmIvLen, AES_CCM_IV_LEN, U8);
-    pub type BufferPlaintext2 = EdhocMessageBufferHacspec;
+    pub type BufferPlaintextCiphertext2 = EdhocMessageBufferHacspec;
     pub type BufferPlaintext3 = EdhocMessageBufferHacspec;
     array!(BytesMac2, MAC_LENGTH_2, U8);
     array!(BytesMac3, MAC_LENGTH_3, U8);
     pub type BufferMessage1 = EdhocMessageBufferHacspec;
     pub type BufferMessage3 = EdhocMessageBufferHacspec;
-    pub type BufferCiphertext2 = EdhocMessageBufferHacspec;
     pub type BufferCiphertext3 = EdhocMessageBufferHacspec;
     array!(BytesHashLen, SHA256_DIGEST_LEN, U8);
     array!(BytesP256ElemLen, P256_ELEM_LEN, U8);
