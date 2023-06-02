@@ -28,3 +28,15 @@ rust-psa-baremetal = [ "edhoc-crypto/psa-rust-baremetal", "edhoc-consts/rust" ]
 rust-cryptocell310 = [ "edhoc-consts/rust", "edhoc-crypto/cryptocell310-rust" ]
 ead-none = [ "edhoc-ead/ead-none" ]
 ead-zeroconf = [ "edhoc-ead/ead-zeroconf" ]
+
+# # AIO DotBot hackaton, June 2, 2023
+# The following configuration is used to build a static library that can be linked with C code, specifically the DotBot firmware.
+# In the context of the hackathon, the build was tested on a nrf52840dk board.
+# To generate the static library, run the following command:
+# - cargo build --target thumbv7em-none-eabihf --package edhoc-rs --package edhoc-crypto --package edhoc-ead  --features="rust-cryptocell310" --release
+# It can then be linked with the DotBot firmware by:
+# - cp target/thumbv7em-none-eabihf/release/libedhoc_rs.a <path to DotBot firmware>/projects/03app_dotbot_gateway/
+# - in Segger Embedded Studio, go to Options -> Linker -> Additional Input Files and add libedhoc_rs.a
+[lib]
+name = "edhoc_rs" # name of the static library
+crate-type = ["staticlib"] # type of the library, in this case a static library

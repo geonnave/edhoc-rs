@@ -1,5 +1,38 @@
 #![cfg_attr(not(test), no_std)]
 
+
+// # AIO DotBots hackaton, June 2, 2023
+// The 3 functions below were added in the context of the hackathon
+// The goal is to be able to call Rust functions from C
+// Specifically, we want to integrate the Rust EDHOC library with the DotBots firmware
+
+// Rust requires a panic handler in order to compile for cortex-m in no_std mode
+use core::panic::PanicInfo;
+#[panic_handler]
+fn my_panic(_info: &PanicInfo) -> ! {
+    loop {}
+}
+
+// This is just a dummy function to demonstrate how to call Rust from C
+#[no_mangle]
+pub extern "C" fn edhoc_add(a: i32, b: i32) -> i32 {
+    a + b
+}
+
+// This function actually uses the selected crypto backend to generate a elliptic curve key pair
+// It was tested with the cryptocell310 backend
+#[no_mangle]
+pub extern "C" fn p256_generate_key_pair_from_c(out_private_key: *mut u8, out_public_key: *mut u8) {
+    let (private_key, public_key) = p256_generate_key_pair();
+
+    unsafe {
+        // copy the arrays to the pointers received from C
+        // this makes sure that data is not dropped when the function returns
+        core::ptr::copy_nonoverlapping(private_key.as_ptr(), out_private_key, P256_ELEM_LEN);
+        core::ptr::copy_nonoverlapping(public_key.as_ptr(), out_public_key, P256_ELEM_LEN);
+    }
+}
+
 #[cfg(any(
     feature = "hacspec-hacspec",
     feature = "hacspec-cc2538",
