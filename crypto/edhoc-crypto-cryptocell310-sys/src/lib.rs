@@ -312,6 +312,39 @@ mod hacspec {
 mod rust {
     use super::*;
 
+    // shared mutable global state for crypto backend (not thread-safe)
+    static mut rnd_context: CRYS_RND_State_t = CRYS_RND_State_t {
+        Seed: [0; 12usize],
+        PreviousRandValue: [0; 4usize],
+        PreviousAdditionalInput: [0; 17usize],
+        AdditionalInput: [0; 16usize],
+        AddInputSizeWords: 0,
+        EntropySourceSizeWords: 0,
+        ReseedCounter: 0,
+        KeySizeWords: 0,
+        StateFlag: 0,
+        TrngProcesState: 0,
+        ValidTag: 0,
+        EntropySizeBits: 0,
+    };
+    static mut rnd_work_buffer: CRYS_RND_WorkBuff_t = CRYS_RND_WorkBuff_t {
+        crysRndWorkBuff: [0; 1528usize]
+    };
+
+    #[no_mangle]
+    pub unsafe extern "C" fn edhoc_rs_crypto_init() {
+        unsafe {
+            SaSi_LibInit();
+            let ret = CRYS_RndInit(
+                &mut rnd_context as *mut _ as *mut c_void,
+                &mut rnd_work_buffer as *mut _,
+            );
+            if ret != CRYS_OK {
+                panic!("Crypto backend initialization failed");
+            }
+        }
+    }
+
     pub fn sha256_digest(message: &BytesMaxBuffer, message_len: usize) -> BytesHashLen {
         let mut buffer: [u32; 64 / 4] = [0x00; 64 / 4];
 
@@ -507,15 +540,6 @@ mod rust {
     }
 
     pub fn p256_generate_key_pair() -> (BytesP256ElemLen, BytesP256ElemLen) {
-        let mut rnd_context = CRYS_RND_State_t::default();
-        let mut rnd_work_buffer = CRYS_RND_WorkBuff_t::default();
-        unsafe {
-            SaSi_LibInit();
-            CRYS_RndInit(
-                &mut rnd_context as *mut _ as *mut c_void,
-                &mut rnd_work_buffer as *mut _,
-            );
-        }
         let rnd_generate_vect_func: SaSiRndGenerateVectWorkFunc_t = Some(CRYS_RND_GenerateVector);
         let mut curve_256 =
             unsafe { CRYS_ECPKI_GetEcDomain(CRYS_ECPKI_DomainID_t_CRYS_ECPKI_DomainID_secp256r1) };
@@ -545,8 +569,6 @@ mod rust {
         unsafe {
             CRYS_ECPKI_ExportPrivKey(crys_private_key, private_key.as_mut_ptr(), &mut key_size);
         }
-
-        // let private_key = BytesP256ElemLen::from_public_slice(&private_key[..]);
 
         let mut public_key: [u8; P256_ELEM_LEN + 1] = [0x0; P256_ELEM_LEN + 1];
         let mut key_size: u32 = (P256_ELEM_LEN as u32) + 1;

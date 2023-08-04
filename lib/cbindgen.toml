@@ -9,6 +9,9 @@ header = """
  * ================================================================================================
  */"""
 includes = ["edhoc_consts.h"]
+trailer = """
+void edhoc_rs_crypto_init(void);
+"""
 
 [parse.expand]
 all_features = false
