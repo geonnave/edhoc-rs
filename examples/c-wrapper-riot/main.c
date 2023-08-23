@@ -26,6 +26,9 @@ int main(void)
     mbedtls_memory_buffer_alloc_init(buffer, 4096 * 2);
 #endif
 
+    edhoc_rs_crypto_init();
+    puts("Crypto initialized.");
+
     puts("Begin test: generate key pair.");
     uint8_t out_private_key[32] = {0};
     uint8_t out_public_key[32] = {0};
@@ -40,17 +43,26 @@ int main(void)
 
     EdhocMessageBuffer message_1;
     initiator_prepare_message_1(&initiator, &message_1);
+    puts("message_1 prepared.");
+
     responder_process_message_1(&responder, &message_1);
+    puts("message_1 processed.");
     EdhocMessageBuffer message_2;
     uint8_t c_r_sent;
     responder_prepare_message_2(&responder, &message_2, &c_r_sent);
+    puts("message_2 prepared.");
+
     uint8_t c_r_received;
     initiator_process_message_2(&initiator, &message_2, &c_r_received);
+    puts("message_2 processed.");
     EdhocMessageBuffer message_3;
     uint8_t prk_out_initiator[SHA256_DIGEST_LEN];
     initiator_prepare_message_3(&initiator, &message_3, &prk_out_initiator);
+    puts("message_3 prepared.");
+
     uint8_t prk_out_responder[SHA256_DIGEST_LEN];
     responder_process_message_3(&responder, &message_3, &prk_out_responder);
+    puts("message_3 processed.");
 
     printf("\nprk_out_initiator: \n");
     od_hex_dump(prk_out_initiator, SHA256_DIGEST_LEN, OD_WIDTH_DEFAULT);

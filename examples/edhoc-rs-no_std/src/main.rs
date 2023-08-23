@@ -31,6 +31,9 @@ fn main() -> ! {
     #[cfg(feature = "rtt")]
     rtt_init_print!();
 
+    #[cfg(any(feature = "rust-cryptocell310", feature = "hacspec-cryptocell310"))]
+    edhoc_rs_crypto_init();
+
     // Initialize the allocator BEFORE you use it
     // The hacspec version does some allocations in the heap
     #[cfg(any(feature = "hacspec-psa", feature = "hacspec-cryptocell310",))]
