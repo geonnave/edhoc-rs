@@ -17,8 +17,8 @@
 
 pub use {lakers_shared::Crypto as CryptoTrait, lakers_shared::*};
 
-#[cfg(any(feature = "ead-none", feature = "ead-authz"))]
-pub use lakers_ead::*;
+#[cfg(feature = "ead-authz")]
+pub use lakers_ead_authz::*;
 
 mod edhoc;
 use edhoc::*;

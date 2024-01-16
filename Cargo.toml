@@ -2,8 +2,7 @@
 
 members = [
   "lib",
-  "ead",
-  "ead/lakers-ead-authz",
+  "lakers-ead-authz",
   "crypto",
   "crypto/lakers-crypto-cc2538",
   "crypto/lakers-crypto-hacspec",
@@ -19,7 +18,7 @@ members = [
 # tested on the host architecture
 default-members = [
   "lib",
-  "ead",
+  "lakers-ead-authz",
   "crypto",
   "crypto/lakers-crypto-hacspec",
   "examples/coap",
@@ -41,8 +40,7 @@ readme = "shared/README.md"
 [workspace.dependencies]
 
 lakers-shared = { package = "lakers-shared", path = "shared/", version = "^0.4.1" }
-lakers-ead = { package = "lakers-ead-dispatch", path = "ead/", version = "^0.4.1", default-features = false }
-lakers-ead-authz = { package = "lakers-ead-authz", path = "ead/lakers-ead-authz/", version = "^0.4.1" }
+lakers-ead-authz = { package = "lakers-ead-authz", path = "lakers-ead-authz/", version = "^0.4.1" }
 lakers-crypto = { path = "crypto/" }
 
 lakers-crypto-cc2538 = { path = "crypto/lakers-crypto-cc2538/" }
