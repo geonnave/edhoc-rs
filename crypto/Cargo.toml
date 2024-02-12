@@ -11,9 +11,6 @@ readme.workspace = true
 [dependencies]
 lakers-shared = { package = "lakers-shared", path = "../shared", default-features = false }
 
-# hacspec
-# lakers-crypto-hacspec = { workspace = true, optional = true }
-
 # cc2538 hardware accelerated
 lakers-crypto-cc2538 = { workspace = true, optional = true }
 
@@ -29,7 +26,6 @@ rand_core = { version = "0.6.4", optional = true, default-features = false }
 
 [features]
 default = [  ]
-# hacspec = [ "lakers-crypto-hacspec" ]
 cc2538 = [ "lakers-crypto-cc2538" ]
 psa = [ "lakers-crypto-psa" ]
 psa-baremetal = [ "psa", "lakers-crypto-psa/baremetal" ]
