@@ -1,5 +1,5 @@
 use lakers::*;
-use pyo3::prelude::*;
+use pyo3::{prelude::*, types::PyBytes};
 
 #[pyclass(name = "AuthzAutenticator")]
 pub struct PyAuthzAutenticator {
@@ -17,18 +17,19 @@ impl PyAuthzAutenticator {
         }
     }
 
-    pub fn process_ead_1(
+    pub fn process_ead_1<'a>(
         &mut self,
+        py: Python<'a>,
         ead_1: EADItem,
         message_1: Vec<u8>,
-    ) -> PyResult<(Vec<u8>, Vec<u8>)> {
+    ) -> PyResult<(&'a PyBytes, &'a PyBytes)> {
         let message_1 = EdhocMessageBuffer::new_from_slice(message_1.as_slice())?;
         let (state, loc_w, voucher_request) =
             self.authenticator.process_ead_1(&ead_1, &message_1)?;
         self.authenticator_wait = state;
         Ok((
-            Vec::from(loc_w.as_slice()),
-            Vec::from(voucher_request.as_slice()),
+            PyBytes::new(py, loc_w.as_slice()),
+            PyBytes::new(py, voucher_request.as_slice()),
         ))
     }
 

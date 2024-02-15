@@ -31,7 +31,7 @@ def test_handshake():
     # responder
     ead_1 = responder.process_message_1(message_1)
     assert ead_1 == None
-    message_2 = responder.prepare_message_2(lakers.CredentialTransfer.ByReference, None, ead_1)
+    message_2 = responder.prepare_message_2(lakers.CredentialTransfer.ByReference, None, None)
     assert type(message_2) == bytes
 
     # initiator
