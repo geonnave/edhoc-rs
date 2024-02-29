@@ -27,7 +27,6 @@ crypto-rustcrypto = [ "lakers-crypto/rustcrypto", "critical-section" ]
 crypto-psa = [ "lakers-crypto/psa", "critical-section" ]
 crypto-psa-baremetal = [ "lakers-crypto/psa-baremetal" ]
 crypto-cryptocell310 = [ "lakers-crypto/cryptocell310" ]
-ead-none = [ "lakers-ead/ead-none" ]
 ead-authz = [ "lakers-ead/ead-authz" ]
 
 [lib]

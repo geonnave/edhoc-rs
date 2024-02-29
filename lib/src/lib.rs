@@ -626,7 +626,7 @@ mod test_lib {
 }
 
 #[cfg(test)]
-mod test_ead_authz {
+mod test_lib_authz {
     use super::*;
     use hexlit::hex;
     use lakers_crypto::default_crypto;

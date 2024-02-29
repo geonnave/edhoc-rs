@@ -76,7 +76,7 @@ cd ./examples/lakers-no_std
 cargo build --target="thumbv7em-none-eabihf" --release
 
 # build using the psa crypto backend (software-based)
-cargo build --target="thumbv7em-none-eabihf" --no-default-features --features="crypto-psa, ead-none, rtt" --release
+cargo build --target="thumbv7em-none-eabihf" --no-default-features --features="crypto-psa, rtt" --release
 
 ```
 

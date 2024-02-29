@@ -22,9 +22,8 @@ panic-semihosting = { version = "0.6.0", features = ["exit"] }
 rtt-target = { version = "0.3.1", features = ["cortex-m"] }
 
 [features]
-default = [ "rtt", "crypto-cryptocell310", "ead-none" ]
+default = [ "rtt", "crypto-cryptocell310" ]
 rtt = [ ]
 crypto-psa = [ "lakers-crypto/psa-baremetal" ]
 crypto-cryptocell310 = [ "lakers-crypto/cryptocell310" ]
-ead-none = [ "lakers-ead/ead-none" ]
 ead-authz = [ "lakers-ead/ead-authz" ]
