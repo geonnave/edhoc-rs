@@ -204,7 +204,39 @@ jobs:
       run: sudo apt-get -y update && sudo apt-get -y install gcc-arm-none-eabi
 
     - name: Build example
-      run: cd examples/lakers-no_std && cargo build --target="thumbv7em-none-eabihf" --no-default-features --features="${{ matrix.crypto_backend }}, ${{ matrix.ead }}, rtt" --release
+      run: |
+        cd examples/lakers-no_std
+        cargo build --target="thumbv7em-none-eabihf" --no-default-features --features="${{ matrix.crypto_backend }}, ${{ matrix.ead }}, rtt" --release
+
+
+  compare-sizes-cortex-m4:
+    needs: unit-tests
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        ead: [lakers-ead/ead-authz]
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v3
+
+    - name: Install arm targets for Rust
+      run: rustup target add thumbv7em-none-eabihf
+    - name: Install arm gcc
+      run: sudo apt-get -y update && sudo apt-get -y install gcc-arm-none-eabi
+
+    - name: Build example
+      run: |
+        cd examples/lakers-no_std
+        cargo size --target="thumbv7em-none-eabihf" --no-default-features --features="crypto-cryptocell310, ${{ matrix.ead }}, rtt" --release |& tee size-${{ matrix.ead }}.log
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: lakers-cortex-m4-size-${{ matrix.ead }}
+        path: ./target/size-${{ matrix.ead }}.log
 
 
   build-coap-example:

@@ -1,10 +1,18 @@
 [target.thumbv7m-none-eabi]
 runner = "qemu-system-arm -cpu cortex-m3 -machine lm3s6965evb -nographic -semihosting-config enable=on,target=native -kernel"
-rustflags = [ "-C", "link-arg=-Tlink.x" ]
+rustflags = [
+    "-C",
+    "link-arg=-Tlink.x",
+    "-Clink-args=-Map=./target/thumbv7m-none-eabi/lakers.map",
+]
 
 [target.thumbv7em-none-eabihf]
 runner = "probe-run --chip nRF52840_xxAA"
-rustflags = [ "-C", "link-arg=-Tlink.x" ]
+rustflags = [
+    "-C",
+    "link-arg=-Tlink.x",
+    "-Clink-args=-Map=./target/thumbv7em-none-eabihf/lakers.map",
+]
 
 [build]
-target = "thumbv7m-none-eabi"        # Cortex-M3
+target = "thumbv7m-none-eabi" # Cortex-M3
