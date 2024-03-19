@@ -11,6 +11,7 @@ readme.workspace = true
 
 [dependencies]
 lakers-shared.workspace = true
+static_cell = "2.0.0"
 
 [build-dependencies]
 bindgen = "0.69.1"

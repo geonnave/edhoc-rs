@@ -38,7 +38,7 @@ pub type Crypto = lakers_crypto_cryptocell310::Crypto;
 
 #[cfg(any(feature = "cryptocell310", feature = "cryptocell310-rust"))]
 pub const fn default_crypto() -> Crypto {
-    lakers_crypto_cryptocell310::Crypto
+    lakers_crypto_cryptocell310::Crypto::new()
 }
 
 /// See test_implements_crypto

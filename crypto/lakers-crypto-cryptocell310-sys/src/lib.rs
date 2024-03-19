@@ -7,6 +7,7 @@ include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
 use core::ffi::c_void;
 use lakers_shared::{Crypto as CryptoTrait, *};
+use static_cell::StaticCell;
 
 fn convert_array(input: &[u32]) -> [u8; SHA256_DIGEST_LEN] {
     assert!(input.len() == SHA256_DIGEST_LEN / 4);
@@ -18,8 +19,31 @@ fn convert_array(input: &[u32]) -> [u8; SHA256_DIGEST_LEN] {
     output
 }
 
-#[derive(Debug)]
-pub struct Crypto;
+// #[derive(Debug)]
+pub struct Crypto {
+    // x: StaticCell<u32>,
+}
+
+static SOME_INT: StaticCell<u32> = StaticCell::new();
+
+impl core::fmt::Debug for Crypto {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        f.debug_struct("Crypto")
+            // discarding the value in the StaticCell, which doesn't implement Debug
+            .finish()
+    }
+}
+
+impl Crypto {
+    pub const fn new() -> Self {
+        // Self { x: StaticCell::new() }
+        Self {}
+    }
+
+    // pub fn init(&'static self, x: u32) -> &'static mut u32 {
+    //     self.x.init(x)
+    // }
+}
 
 impl CryptoTrait for Crypto {
     fn sha256_digest(&mut self, message: &BytesMaxBuffer, message_len: usize) -> BytesHashLen {
