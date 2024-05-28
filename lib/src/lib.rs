@@ -15,6 +15,9 @@
 //! [EDHOC]: https://datatracker.ietf.org/doc/html/rfc9528
 #![cfg_attr(not(test), no_std)]
 
+// use defmt_or_log::*; // FIXME: still not working
+use log::info;
+
 pub use {lakers_shared::Crypto as CryptoTrait, lakers_shared::*};
 
 #[cfg(all(feature = "ead-authz", test))]
@@ -93,6 +96,7 @@ pub struct EdhocResponderDone<Crypto: CryptoTrait> {
 
 impl<'a, Crypto: CryptoTrait> EdhocResponder<'a, Crypto> {
     pub fn new(mut crypto: Crypto, r: &'a [u8], cred_r: CredentialRPK) -> Self {
+        info!("Initializing EdhocInitiator");
         assert!(r.len() == P256_ELEM_LEN);
         let (y, g_y) = crypto.p256_generate_key_pair();
 
@@ -242,12 +246,12 @@ impl<Crypto: CryptoTrait> EdhocResponderDone<Crypto> {
 
 impl<'a, Crypto: CryptoTrait> EdhocInitiator<Crypto> {
     pub fn new(mut crypto: Crypto) -> Self {
+        info!("Initializing EdhocInitiator");
         // we only support a single cipher suite which is already CBOR-encoded
         let mut suites_i: BytesSuites = [0x0; SUITES_LEN];
         let suites_i_len = EDHOC_SUPPORTED_SUITES.len();
         suites_i[0..suites_i_len].copy_from_slice(&EDHOC_SUPPORTED_SUITES[..]);
         let (x, g_x) = crypto.p256_generate_key_pair();
-
         EdhocInitiator {
             state: InitiatorStart {
                 x,

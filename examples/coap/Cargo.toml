@@ -19,3 +19,7 @@ coap-handler = "0.2"
 coap-handler-implementations = "0.5"
 coap-numbers = "0.2.3"
 coap-message-utils = "0.3.1"
+
+# defmt-or-log = { version = "0.2.1", features = ["log"] } // FIXME: still not working
+env_logger = "0.11.3"
+log = "0.4.21"
