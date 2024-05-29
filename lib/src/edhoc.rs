@@ -64,7 +64,7 @@ pub fn r_process_message_1(
         // verify that the method is supported
         if method == EDHOC_METHOD {
             // Step 2: verify that the selected cipher suite is supported
-            if suites_i[suites_i_len - 1] == EDHOC_SUPPORTED_SUITES[0] {
+            if EDHOC_SUPPORTED_SUITES.contains(&suites_i[suites_i_len - 1]) {
                 // hash message_1 and save the hash to the state to avoid saving the whole message
                 let mut message_1_buf: BytesMaxBuffer = [0x00; MAX_BUFFER_LEN];
                 message_1_buf[..message_1.len].copy_from_slice(message_1.as_slice());
