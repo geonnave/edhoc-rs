@@ -25,6 +25,7 @@ hexlit = "0.5.3"
 default = [ "test-ead-none" ]
 test-ead-none = [ ]
 test-ead-authz = [ ]
+no-logs = [ "log/release_max_level_off" ]
 
 [lib]
 crate-type = ["rlib"]
