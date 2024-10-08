@@ -5,9 +5,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-lakers = { package = "lakers", path = "../../lib", features = [ "defmt" ] }
-lakers-ead-authz = { path = "../../ead/lakers-ead-authz", optional = true }
-lakers-crypto = { path = "../../crypto", default-features = false }
+# lakers = { package = "lakers", path = "../../lib", features = [ "defmt" ] }
+# lakers-ead-authz = { path = "../../ead/lakers-ead-authz", optional = true }
+# lakers-crypto = { path = "../../crypto", default-features = false }
 hexlit = "0.5.3"
 
 # depend on an allocator
@@ -23,9 +23,10 @@ defmt = "0.3"
 defmt-rtt = "0.4"
 
 [features]
-default = [ "rtt", "crypto-cryptocell310", "ead-none" ]
-rtt = [ ]
-crypto-psa = [ "lakers-crypto/psa-baremetal" ]
-crypto-cryptocell310 = [ "lakers-crypto/cryptocell310" ]
-ead-none = [ ]
-ead-authz = [ "lakers-ead-authz" ]
+default = [  ]
+# default = [ "rtt", "crypto-cryptocell310", "ead-none" ]
+# rtt = [ ]
+# crypto-psa = [ "lakers-crypto/psa-baremetal" ]
+# crypto-cryptocell310 = [ "lakers-crypto/cryptocell310" ]
+# ead-none = [ ]
+# ead-authz = [ "lakers-ead-authz" ]

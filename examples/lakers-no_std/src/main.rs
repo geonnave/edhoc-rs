@@ -1,6 +1,5 @@
 #![no_std]
 #![no_main]
-#![feature(default_alloc_error_handler)]
 
 use cortex_m_rt::entry;
 use cortex_m_semihosting::debug::{self, EXIT_SUCCESS};
@@ -13,8 +12,6 @@ use defmt::info;
 
 use defmt_rtt as _; // global logger
 
-use lakers::*;
-use lakers_crypto::{default_crypto, CryptoTrait};
 use panic_semihosting as _;
 
 extern crate alloc;
@@ -24,139 +21,65 @@ use embedded_alloc::Heap;
 #[global_allocator]
 static HEAP: Heap = Heap::empty();
 
-extern "C" {
-    pub fn mbedtls_memory_buffer_alloc_init(buf: *mut c_char, len: usize);
+use core::arch::asm;
+
+fn get_sp() -> *const u8 {
+    let sp: *const u8;
+    unsafe {
+        asm!("mov {}, sp", out(reg) sp);
+    }
+    sp
+}
+
+fn paint_ram_from_sp_to_limit(limit: usize) {
+    let sp = get_sp() as usize;
+    let mut addr = sp;
+    info!(
+        "PAINT will paint a total of {} bytes, from {:X} to {:X}",
+        (sp - limit),
+        sp,
+        limit
+    );
+    while addr > limit {
+        unsafe {
+            core::ptr::write_volatile(addr as *mut u32, 0xDEADBEEF);
+        }
+        addr -= 4;
+    }
+    info!(
+        "PAINT painted a total of {} bytes, from {:X} to {:X}",
+        (sp - addr),
+        sp,
+        addr
+    );
+}
+
+static DATA_SIZE: usize = 56;
+static BSS_SIZE: usize = 0; // for some reason, in this script, memory painting only works if BSS_SIZE is 0...
+static STACK_TOP: usize = 0x2000_0000 + DATA_SIZE + BSS_SIZE + 32;
+
+fn dummy(calls: usize) {
+    let arr = [0u8; 4];
+    if calls > 0 && arr[0] == 0 {
+        info!(">> dummy: stack pointer: {:?}", get_sp());
+        dummy(calls - 1);
+    }
 }
 
 #[entry]
 fn main() -> ! {
-    // Memory buffer for mbedtls
-    #[cfg(feature = "crypto-psa")]
-    let mut buffer: [c_char; 4096 * 2] = [0; 4096 * 2];
-    #[cfg(feature = "crypto-psa")]
-    unsafe {
-        mbedtls_memory_buffer_alloc_init(buffer.as_mut_ptr(), buffer.len());
-    }
+    let number_of_calls = 4;
+    let _just_a_variable_easy_to_find_in_the_memory: u32 = 0xB0BA_B0BA;
 
-    // testing output
-    info!("Hello, lakers!");
+    paint_ram_from_sp_to_limit(STACK_TOP);
 
-    // testing asserts
-    assert!(1 == 1);
+    info!("BEGIN test.");
 
-    // lakers test code
-    use hexlit::hex;
+    info!("main: stack pointer: {:?}", get_sp());
 
-    const _ID_CRED_I: &[u8] = &hex!("a104412b");
-    const _ID_CRED_R: &[u8] = &hex!("a104410a");
-    const CRED_I: &[u8] = &hex!("A2027734322D35302D33312D46462D45462D33372D33322D333908A101A5010202412B2001215820AC75E9ECE3E50BFC8ED60399889522405C47BF16DF96660A41298CB4307F7EB62258206E5DE611388A4B8A8211334AC7D37ECB52A387D257E6DB3C2A93DF21FF3AFFC8");
-    const I: &[u8] = &hex!("fb13adeb6518cee5f88417660841142e830a81fe334380a953406a1305e8706b");
-    const R: &[u8] = &hex!("72cc4761dbd4c78f758931aa589d348d1ef874a7e303ede2f140dcf3e6aa4aac");
-    const _G_I: &[u8] = &hex!("ac75e9ece3e50bfc8ed60399889522405c47bf16df96660a41298cb4307f7eb6");
-    const _G_I_Y_COORD: &[u8] =
-        &hex!("6e5de611388a4b8a8211334ac7d37ecb52a387d257e6db3c2a93df21ff3affc8");
-    const CRED_R: &[u8] = &hex!("A2026008A101A5010202410A2001215820BBC34960526EA4D32E940CAD2A234148DDC21791A12AFBCBAC93622046DD44F02258204519E257236B2A0CE2023F0931F1F386CA7AFDA64FCDE0108C224C51EABF6072");
-    const _G_R: &[u8] = &hex!("bbc34960526ea4d32e940cad2a234148ddc21791a12afbcbac93622046dd44f0");
-    const _C_R_TV: [u8; 1] = hex!("27");
+    dummy(number_of_calls);
 
-    fn test_new_initiator() {
-        let _initiator = EdhocInitiator::new(
-            lakers_crypto::default_crypto(),
-            EDHOCMethod::StatStat,
-            EDHOCSuite::CipherSuite2,
-        );
-    }
-
-    test_new_initiator();
-    info!("Test test_new_initiator passed.");
-
-    fn test_p256_keys() {
-        let (x, g_x) = default_crypto().p256_generate_key_pair();
-        let (y, g_y) = default_crypto().p256_generate_key_pair();
-
-        let g_xy = default_crypto().p256_ecdh(&x, &g_y);
-        let g_yx = default_crypto().p256_ecdh(&y, &g_x);
-
-        assert_eq!(g_xy, g_yx);
-    }
-    test_p256_keys();
-    info!("Test test_p256_keys passed.");
-
-    fn test_prepare_message_1() {
-        let initiator = EdhocInitiator::new(
-            lakers_crypto::default_crypto(),
-            EDHOCMethod::StatStat,
-            EDHOCSuite::CipherSuite2,
-        );
-
-        let _c_i =
-            generate_connection_identifier_cbor(&mut lakers_crypto::default_crypto()).as_slice();
-        let message_1 = initiator.prepare_message_1(None, &None);
-        assert!(message_1.is_ok());
-    }
-
-    test_prepare_message_1();
-    info!("Test test_prepare_message_1 passed.");
-
-    fn test_handshake() {
-        let cred_i = Credential::parse_ccs(CRED_I.try_into().unwrap()).unwrap();
-        let cred_r = Credential::parse_ccs(CRED_R.try_into().unwrap()).unwrap();
-
-        let initiator = EdhocInitiator::new(
-            lakers_crypto::default_crypto(),
-            EDHOCMethod::StatStat,
-            EDHOCSuite::CipherSuite2,
-        );
-        let responder = EdhocResponder::new(
-            lakers_crypto::default_crypto(),
-            EDHOCMethod::StatStat,
-            R.try_into().expect("Wrong length of responder private key"),
-            cred_r.clone(),
-        );
-
-        let (initiator, message_1) = initiator.prepare_message_1(None, &None).unwrap();
-
-        let (responder, _c_i, _ead_1) = responder.process_message_1(&message_1).unwrap();
-        let (responder, message_2) = responder
-            .prepare_message_2(CredentialTransfer::ByReference, None, &None)
-            .unwrap();
-
-        let (mut initiator, _c_r, id_cred_r, _ead_2) =
-            initiator.parse_message_2(&message_2).unwrap();
-        let valid_cred_r = credential_check_or_fetch(Some(cred_r), id_cred_r).unwrap();
-        initiator
-            .set_identity(
-                I.try_into().expect("Wrong length of initiator private key"),
-                cred_i.clone(),
-            )
-            .unwrap(); // exposing own identity only after validating cred_r
-        let initiator = initiator.verify_message_2(valid_cred_r).unwrap();
-
-        let (mut initiator, message_3, i_prk_out) = initiator
-            .prepare_message_3(CredentialTransfer::ByReference, &None)
-            .unwrap();
-
-        let (responder, id_cred_i, _ead_3) = responder.parse_message_3(&message_3).unwrap();
-        let valid_cred_i = credential_check_or_fetch(Some(cred_i), id_cred_i).unwrap();
-        let (mut responder, r_prk_out) = responder.verify_message_3(valid_cred_i).unwrap();
-
-        // check that prk_out is equal at initiator and responder side
-        assert_eq!(i_prk_out, r_prk_out);
-
-        // derive OSCORE secret and salt at both sides and compare
-        let i_oscore_secret = initiator.edhoc_exporter(0u8, &[], 16); // label is 0
-        let i_oscore_salt = initiator.edhoc_exporter(1u8, &[], 8); // label is 1
-
-        let r_oscore_secret = responder.edhoc_exporter(0u8, &[], 16); // label is 0
-        let r_oscore_salt = responder.edhoc_exporter(1u8, &[], 8); // label is 1
-
-        assert_eq!(i_oscore_secret, r_oscore_secret);
-        assert_eq!(i_oscore_salt, r_oscore_salt);
-    }
-
-    test_handshake();
-    info!("Test test_handshake passed.");
-    info!("All tests passed.");
+    info!("END test.");
 
     // exit via semihosting call
     debug::exit(EXIT_SUCCESS);

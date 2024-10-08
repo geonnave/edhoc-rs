@@ -3,6 +3,7 @@ runner = "qemu-system-arm -cpu cortex-m3 -machine lm3s6965evb -nographic -semiho
 
 [target.thumbv7em-none-eabihf]
 runner = "probe-rs run --chip nRF52840_xxAA"
+rustflags = ["-Clink-args=-Map=/tmp/lakers.map"]
 
 [build]
 target = "thumbv7m-none-eabi" # Cortex-M3
