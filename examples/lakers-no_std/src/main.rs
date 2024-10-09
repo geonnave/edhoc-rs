@@ -21,78 +21,73 @@ use embedded_alloc::Heap;
 #[global_allocator]
 static HEAP: Heap = Heap::empty();
 
+// ================================ paint the stack ===============================
 use core::arch::asm;
+use core::ptr::addr_of;
+use cortex_m::register::msp;
 
-fn get_sp() -> *const u8 {
-    let sp: *const u8;
-    unsafe {
-        asm!("mov {}, sp", out(reg) sp);
-    }
-    sp
+extern "C" {
+    // marks the end of the stack, see .map file
+    static mut __euninit: u8;
 }
 
-fn paint_ram_from_sp_to_limit(limit: usize) {
-    let sp = get_sp() as usize;
-    let mut addr = sp;
-    info!("PAINT stack pointer is at: {:#X}", sp);
+// using asm because if I use cortex_m::register::msp::read(), it sometimes crashes
+fn get_stack_pointer() -> usize {
+    let stack_pointer: *const u8;
+    unsafe {
+        asm!("mov {}, sp", out(reg) stack_pointer);
+    }
+    stack_pointer as usize
+}
+
+fn get_stack_end() -> usize {
+    unsafe { addr_of!(__euninit) as *const u8 as usize }
+}
+
+fn paint_stack(pattern: u32) {
+    let stack_end = get_stack_end();
+    let stack_pointer = get_stack_pointer();
+    info!("PAINT_STACK stack end: {:#X}", stack_end);
+    info!("PAINT_STACK stack pointer is at: {:#X}", stack_pointer);
+    let mut addr = stack_pointer;
     info!(
-        "PAINT will paint a total of {} bytes, from {:#X} to {:#X}",
-        (sp - limit),
-        sp,
-        limit
+        "PAINT_STACK will paint a total of {} bytes, from {:#X} to {:#X}",
+        (addr - stack_end),
+        addr,
+        stack_end
     );
-    while addr > limit {
+    while addr > stack_end {
         unsafe {
-            core::ptr::write_volatile(addr as *mut u32, 0xDEADBEEF);
+            core::ptr::write_volatile(addr as *mut u32, pattern);
         }
         addr -= 4;
     }
     info!(
-        "== PAINT painted a total of {} bytes, from {:#X} to {:#X} ==",
-        (sp - addr),
-        sp,
+        // do not remove the ==, it is used in the script to parse the output
+        "== PAINT_STACK painted a total of {} bytes, from {:#X} to {:#X} ==",
+        (stack_pointer - addr),
+        stack_pointer,
         addr
     );
 }
+// ================================================================================
 
-static DATA_SIZE: usize = 56;
-static BSS_SIZE: usize = 0; // for some reason, in this script, memory painting only works if BSS_SIZE is 0...
-static STACK_TOP: usize = 0x2000_0000 + DATA_SIZE + BSS_SIZE + 32;
-
-extern "C" {
-    static _stack_start: u32; // Linker symbol for the start of the stack
-    static mut _ebss: u8;
-    static mut _edata: u8;
-    static mut __euninit: u8;
-    static mut __sdata: u8;
-}
-
-fn dummy(calls: usize) {
-    let arr = [0u8; 5];
-    if calls > 0 && arr[0] == 0 {
-        info!(">> dummy: stack pointer: {:?}", get_sp());
-        dummy(calls - 1);
+// sample function that uses some stack space (increase number_of_calls to use more)
+fn dummy(number_of_calls: usize) {
+    let arr = [0u8; 4];
+    if number_of_calls > 0 && arr[0] == 0 {
+        info!(">> dummy: stack pointer: {:?}", get_stack_pointer());
+        dummy(number_of_calls - 1);
     }
 }
 
 #[entry]
 fn main() -> ! {
-    let number_of_calls = 5;
-    let _just_a_variable_easy_to_find_in_the_memory: u32 = 0xB0BA_B0BA;
-
-    let start_stack = unsafe { &_stack_start as *const u32 as usize };
-    info!("Start of stack: {:#X}", start_stack);
-    let stack_end = unsafe { &__euninit as *const u8 as usize };
-    info!("stack end?: {:#X}", stack_end);
-    paint_ram_from_sp_to_limit(stack_end);
-
-    // paint_ram_from_sp_to_limit(STACK_TOP);
+    paint_stack(0xDEAD_BEEF);
 
     info!("BEGIN test.");
 
-    info!("main: stack pointer: {:?}", get_sp());
-
-    dummy(number_of_calls);
+    dummy(1);
 
     info!("END test.");
 
