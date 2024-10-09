@@ -34,8 +34,9 @@ fn get_sp() -> *const u8 {
 fn paint_ram_from_sp_to_limit(limit: usize) {
     let sp = get_sp() as usize;
     let mut addr = sp;
+    info!("PAINT stack pointer is at: {:#X}", sp);
     info!(
-        "PAINT will paint a total of {} bytes, from {:X} to {:X}",
+        "PAINT will paint a total of {} bytes, from {:#X} to {:#X}",
         (sp - limit),
         sp,
         limit
@@ -47,7 +48,7 @@ fn paint_ram_from_sp_to_limit(limit: usize) {
         addr -= 4;
     }
     info!(
-        "PAINT painted a total of {} bytes, from {:X} to {:X}",
+        "== PAINT painted a total of {} bytes, from {:#X} to {:#X} ==",
         (sp - addr),
         sp,
         addr
@@ -58,8 +59,16 @@ static DATA_SIZE: usize = 56;
 static BSS_SIZE: usize = 0; // for some reason, in this script, memory painting only works if BSS_SIZE is 0...
 static STACK_TOP: usize = 0x2000_0000 + DATA_SIZE + BSS_SIZE + 32;
 
+extern "C" {
+    static _stack_start: u32; // Linker symbol for the start of the stack
+    static mut _ebss: u8;
+    static mut _edata: u8;
+    static mut __euninit: u8;
+    static mut __sdata: u8;
+}
+
 fn dummy(calls: usize) {
-    let arr = [0u8; 4];
+    let arr = [0u8; 5];
     if calls > 0 && arr[0] == 0 {
         info!(">> dummy: stack pointer: {:?}", get_sp());
         dummy(calls - 1);
@@ -68,10 +77,16 @@ fn dummy(calls: usize) {
 
 #[entry]
 fn main() -> ! {
-    let number_of_calls = 4;
+    let number_of_calls = 5;
     let _just_a_variable_easy_to_find_in_the_memory: u32 = 0xB0BA_B0BA;
 
-    paint_ram_from_sp_to_limit(STACK_TOP);
+    let start_stack = unsafe { &_stack_start as *const u32 as usize };
+    info!("Start of stack: {:#X}", start_stack);
+    let stack_end = unsafe { &__euninit as *const u8 as usize };
+    info!("stack end?: {:#X}", stack_end);
+    paint_ram_from_sp_to_limit(stack_end);
+
+    // paint_ram_from_sp_to_limit(STACK_TOP);
 
     info!("BEGIN test.");
 
