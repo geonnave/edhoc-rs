@@ -14,10 +14,16 @@ hexlit = "0.5.3"
 embedded-alloc = "0.5.0"
 
 # cortex-m specifics
-cortex-m = { version = "0.7.6", features = ["critical-section-single-core"]}
-cortex-m-rt = "0.7.1"
-cortex-m-semihosting = "0.5.0"
-panic-semihosting = { version = "0.6.0", features = ["exit"] }
+# cortex-m = { version = "0.7.6", features = ["critical-section-single-core"]}
+# cortex-m-rt = "0.7.1"
+# cortex-m-semihosting = "0.5.0"
+# panic-semihosting = { version = "0.6.0", features = ["exit"] }
+
+# cortex-m and related crates from GitHub
+cortex-m = { git = "https://github.com/rust-embedded/cortex-m", package = "cortex-m", branch = "master", features = ["critical-section-single-core"] }
+cortex-m-rt = { git = "https://github.com/rust-embedded/cortex-m", package = "cortex-m-rt", branch = "master" }
+cortex-m-semihosting = { git = "https://github.com/rust-embedded/cortex-m", package = "cortex-m-semihosting", branch = "master" }
+panic-semihosting = { git = "https://github.com/rust-embedded/cortex-m", package = "panic-semihosting", branch = "master", features = ["exit"] }
 
 defmt = "0.3"
 defmt-rtt = "0.4"

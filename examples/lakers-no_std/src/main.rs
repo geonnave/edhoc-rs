@@ -22,26 +22,20 @@ use embedded_alloc::Heap;
 static HEAP: Heap = Heap::empty();
 
 // ================================ paint the stack ===============================
-use core::arch::asm;
-use core::ptr::addr_of;
-use cortex_m::register::msp;
-
-extern "C" {
-    // marks the end of the stack, see .map file
-    static mut __euninit: u8;
-}
-
 // using asm because if I use cortex_m::register::msp::read(), it sometimes crashes
 fn get_stack_pointer() -> usize {
     let stack_pointer: *const u8;
     unsafe {
-        asm!("mov {}, sp", out(reg) stack_pointer);
+        core::arch::asm!("mov {}, sp", out(reg) stack_pointer);
     }
     stack_pointer as usize
 }
 
 fn get_stack_end() -> usize {
-    unsafe { addr_of!(__euninit) as *const u8 as usize }
+    extern "C" {
+        static mut __sheap: u8;
+    }
+    unsafe { core::ptr::addr_of!(__sheap) as *const u8 as usize }
 }
 
 fn paint_stack(pattern: u32) {
@@ -76,15 +70,18 @@ fn paint_stack(pattern: u32) {
 fn dummy(number_of_calls: usize) {
     let arr = [0u8; 4];
     if number_of_calls > 0 && arr[0] == 0 {
-        info!(">> dummy: stack pointer: {:?}", get_stack_pointer());
+        info!(">> dummy: stack pointer: {:#X}", get_stack_pointer());
         dummy(number_of_calls - 1);
     }
 }
 
+#[cortex_m_rt::pre_init]
+unsafe fn pre_init() {
+    paint_stack(0xDEAD_BEEF);
+}
+
 #[entry]
 fn main() -> ! {
-    paint_stack(0xDEAD_BEEF);
-
     info!("BEGIN test.");
 
     dummy(1);
