@@ -6,6 +6,7 @@ runner = "probe-rs run --chip nRF52840_xxAA"
 
 [build]
 target = "thumbv7m-none-eabi" # Cortex-M3
+rustflags = ["-Clink-args=-Map=/tmp/lakers-no_std.map"]
 
 [env]
 DEFMT_LOG = "info"

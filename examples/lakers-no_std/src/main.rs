@@ -28,8 +28,44 @@ extern "C" {
     pub fn mbedtls_memory_buffer_alloc_init(buf: *mut c_char, len: usize);
 }
 
+extern "C" {
+    static mut __sheap: u8;
+    static mut _stack_start: u8;
+}
+#[cortex_m_rt::pre_init]
+unsafe fn pre_init() {
+    let mut addr;
+    // get heap start
+    extern "C" {
+        static mut __sheap: u8;
+    }
+    let heap_start = core::ptr::addr_of!(__sheap) as *mut u8 as usize;
+
+    // get stack pointer
+    let stack_pointer: *const u8;
+    core::arch::asm!("mrs {}, msp", out(reg) stack_pointer);
+    let stack_pointer = stack_pointer as usize - 4;
+
+    // paint the stack
+    addr = heap_start;
+    while addr < stack_pointer {
+        unsafe {
+            core::ptr::write_volatile(addr as *mut u32, 0xDEAD_BEEF);
+        }
+        addr += 4;
+    }
+}
+
+// measure with $(probe-rs read b32 0x20000440 $(( (0x20010000 - 0x2000045C) / 4 )) --chip nRF52840_xxAA | tr ' ' '\n' | grep -v deadbeef | wc -l | awk '{print $1*4}')
 #[entry]
 fn main() -> ! {
+    info!("__sheap: {:#X}", unsafe {
+        core::ptr::addr_of!(__sheap) as *const _ as usize
+    });
+    info!("_stack_start: {:#X}", unsafe {
+        core::ptr::addr_of!(_stack_start) as *const _ as usize
+    });
+
     // Memory buffer for mbedtls
     #[cfg(feature = "crypto-psa")]
     let mut buffer: [c_char; 4096 * 2] = [0; 4096 * 2];
