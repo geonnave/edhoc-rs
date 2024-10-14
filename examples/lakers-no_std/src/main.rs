@@ -21,70 +21,58 @@ use embedded_alloc::Heap;
 #[global_allocator]
 static HEAP: Heap = Heap::empty();
 
-// ================================ paint the stack ===============================
-// using asm because if I use cortex_m::register::msp::read(), it sometimes crashes
-fn get_stack_pointer() -> usize {
-    let stack_pointer: *const u8;
-    unsafe {
-        core::arch::asm!("mov {}, sp", out(reg) stack_pointer);
-    }
-    stack_pointer as usize
-}
-
-fn get_stack_end() -> usize {
-    extern "C" {
-        static mut __sheap: u8;
-    }
-    unsafe { core::ptr::addr_of!(__sheap) as *const u8 as usize }
-}
-
-fn paint_stack(pattern: u32) {
-    let stack_end = get_stack_end();
-    let stack_pointer = get_stack_pointer();
-    info!("PAINT_STACK stack end: {:#X}", stack_end);
-    info!("PAINT_STACK stack pointer is at: {:#X}", stack_pointer);
-    let mut addr = stack_pointer;
-    info!(
-        "PAINT_STACK will paint a total of {} bytes, from {:#X} to {:#X}",
-        (addr - stack_end),
-        addr,
-        stack_end
-    );
-    while addr > stack_end {
-        unsafe {
-            core::ptr::write_volatile(addr as *mut u32, pattern);
-        }
-        addr -= 4;
-    }
-    info!(
-        // do not remove the ==, it is used in the script to parse the output
-        "== PAINT_STACK painted a total of {} bytes, from {:#X} to {:#X} ==",
-        (stack_pointer - addr),
-        stack_pointer,
-        addr
-    );
-}
-// ================================================================================
-
 // sample function that uses some stack space (increase number_of_calls to use more)
 fn dummy(number_of_calls: usize) {
-    let arr = [0u8; 4];
+    let arr = [0u8; 5];
     if number_of_calls > 0 && arr[0] == 0 {
-        info!(">> dummy: stack pointer: {:#X}", get_stack_pointer());
+        // get stack pointer
+        let stack_pointer: *const u8;
+        unsafe { core::arch::asm!("mrs {}, msp", out(reg) stack_pointer) };
+        info!(">> dummy: stack pointer: {:#X}", stack_pointer as usize);
         dummy(number_of_calls - 1);
     }
 }
 
+extern "C" {
+    static mut __sheap: u8;
+    static mut _stack_start: u8;
+}
 #[cortex_m_rt::pre_init]
 unsafe fn pre_init() {
-    paint_stack(0xDEAD_BEEF);
+    let mut addr;
+    // get heap start
+    extern "C" {
+        static mut __sheap: u8;
+    }
+    let heap_start = core::ptr::addr_of!(__sheap) as *mut u8 as usize;
+
+    // get stack pointer
+    let stack_pointer: *const u8;
+    core::arch::asm!("mrs {}, msp", out(reg) stack_pointer);
+    let stack_pointer = stack_pointer as usize - 4;
+
+    // paint the stack
+    addr = heap_start;
+    while addr < stack_pointer {
+        unsafe {
+            core::ptr::write_volatile(addr as *mut u32, 0xDEAD_BEEF);
+        }
+        addr += 4;
+    }
 }
 
 #[entry]
 fn main() -> ! {
+    info!("__sheap: {:#X}", unsafe {
+        core::ptr::addr_of!(__sheap) as *const _ as usize
+    });
+    info!("_stack_start: {:#X}", unsafe {
+        core::ptr::addr_of!(_stack_start) as *const _ as usize
+    });
+
     info!("BEGIN test.");
 
-    dummy(1);
+    dummy(2);
 
     info!("END test.");
 
