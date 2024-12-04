@@ -45,32 +45,24 @@ fn main() -> ! {
     cc_host_rgf.icr().write(|w| unsafe { w.bits(0xFFFFFFFF) });
 
     // Configure HASH as cryptographic flow
-    unsafe {
-        let hash_ctl_addr = (0x5002B000 + 0x900) as *mut u32;
-        core::ptr::write_volatile(hash_ctl_addr, 7); // HashActive
-    }
+    cc_ctl.crypto_ctl().write(|w| w.mode().hash_active());
 
     // Set the HASH mode to SHA256
     cc_hash.hash_control().write(|w| w.mode().sha256());
 
-    info!("HASH engine configured.");
+    // Enable automatic HW padding
+    cc_hash.hash_pad().write(|w| w.enable().set_bit());
+    cc_hash.hash_pad_auto().write(|w| w.hwpad().enable());
 
     // Write the initial values for SHA256
-    cc_hash.hash_h(0).write(|w| unsafe { w.bits(0x6A09E667) });
-    cc_hash.hash_h(1).write(|w| unsafe { w.bits(0xBB67AE85) });
-    cc_hash.hash_h(2).write(|w| unsafe { w.bits(0x3C6EF372) });
-    cc_hash.hash_h(3).write(|w| unsafe { w.bits(0xA54FF53A) });
-    cc_hash.hash_h(4).write(|w| unsafe { w.bits(0x510E527F) });
-    cc_hash.hash_h(5).write(|w| unsafe { w.bits(0x9B05688C) });
-    cc_hash.hash_h(6).write(|w| unsafe { w.bits(0x1F83D9AB) });
     cc_hash.hash_h(7).write(|w| unsafe { w.bits(0x5BE0CD19) });
-
-    info!("Initial values written.");
-
-    info!(
-        "Writing address {:#X} to SRC_MEM_ADDR",
-        MESSAGE.as_ptr() as u32
-    );
+    cc_hash.hash_h(6).write(|w| unsafe { w.bits(0x1F83D9AB) });
+    cc_hash.hash_h(5).write(|w| unsafe { w.bits(0x9B05688C) });
+    cc_hash.hash_h(4).write(|w| unsafe { w.bits(0x510E527F) });
+    cc_hash.hash_h(3).write(|w| unsafe { w.bits(0xA54FF53A) });
+    cc_hash.hash_h(2).write(|w| unsafe { w.bits(0x3C6EF372) });
+    cc_hash.hash_h(1).write(|w| unsafe { w.bits(0xBB67AE85) });
+    cc_hash.hash_h(0).write(|w| unsafe { w.bits(0x6A09E667) });
 
     // Set the input source for DMA
     cc_din
@@ -80,12 +72,9 @@ fn main() -> ! {
         .src_mem_size()
         .write(|w| unsafe { w.bits(MESSAGE.len() as u32) });
 
-    info!("Waiting for the DMA transfer to complete...");
     while cc_host_rgf.irr().read().mem_to_din_int().bit_is_clear() {}
-    info!("DMA transfer complete.");
 
-    info!("Waiting for the HASH engine to be idle again...");
-    while cc_ctl.hash_busy().read().bits() != 0 {}
+    while cc_ctl.hash_busy().read().status().is_busy() {}
 
     // Read the resulting hash from HASH_H registers
     let mut hash_regs = [0u32; 8];
@@ -94,7 +83,7 @@ fn main() -> ! {
     }
 
     let hash_bytes = convert_array(&hash_regs);
-    info!("Hash: {:?}", hash_bytes);
+    info!("Hash: {:02x}", hash_bytes);
 
     info!("Done.");
 
@@ -108,7 +97,7 @@ fn convert_array(input: &[u32]) -> [u8; SHA256_DIGEST_LEN] {
 
     let mut output = [0x00u8; SHA256_DIGEST_LEN];
     for i in 0..SHA256_DIGEST_LEN / 4 {
-        output[4 * i..4 * i + 4].copy_from_slice(&input[i].to_le_bytes());
+        output[4 * i..4 * i + 4].copy_from_slice(&input[i].to_be_bytes());
     }
     output
 }
